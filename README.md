@@ -16,7 +16,7 @@ Open `index.html` in a browser. The music player uses demo audio. User sign-up a
 4. In **Authentication → Settings → Authorized domains**, add `onuja070-lang.github.io`.
 5. In **Authentication → Templates**, configure the email verification message and sender settings.
 
-Users create their own accounts through the website and must confirm their email before logging in. Firebase web-app configuration is intended for public client use; protect backend data separately with Firebase Security Rules. **Never put service-account credentials or private keys in this website or its public repository.**
+Users create their own accounts with a username, email, and password, then confirm their email before logging in. The username is saved as the Firebase Auth display name; usernames are not guaranteed unique until a database with appropriate security rules is added. Firebase web-app configuration is intended for public client use; protect backend data separately with Firebase Security Rules. **Never put service-account credentials or private keys in this website or its public repository.**
 
 ## Publish with GitHub Pages
 

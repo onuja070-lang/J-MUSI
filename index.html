@@ -312,7 +312,7 @@
       <div class="brand"><span class="brand-mark">♫</span><span>J-<span>MUSIC</span></span></div>
       <h2 id="modalTitle" style="margin-top:22px">Welcome back</h2>
       <p id="modalDescription">Log in to save your favorites and follow the artists you love.</p>
-      <div id="nameField" hidden><label for="fullName">Your name</label><input id="fullName" name="name" autocomplete="name" placeholder="Jordan Lee"></div>
+      <div id="usernameField" hidden><label for="username">Username</label><input id="username" name="username" autocomplete="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" placeholder="jordanmusic" title="Use 3–24 letters, numbers, or underscores."></div>
       <label for="email">Email address</label><input id="email" name="email" type="email" required autocomplete="email" placeholder="you@example.com">
       <div id="passwordField"><label for="password">Password</label><input id="password" name="password" type="password" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters"></div>
       <p class="account-error" id="accountError" role="alert" hidden></p>
@@ -474,13 +474,13 @@
     const backdrop = document.getElementById("modalBackdrop");
     const modalTitle = document.getElementById("modalTitle");
     const modalDescription = document.getElementById("modalDescription");
-    const nameField = document.getElementById("nameField");
+    const usernameField = document.getElementById("usernameField");
     const passwordField = document.getElementById("passwordField");
     const submitAccount = document.getElementById("submitAccount");
     const accountError = document.getElementById("accountError");
     const accountSwitch = document.getElementById("accountSwitch");
     const accountForm = document.getElementById("accountForm");
-    const fullNameInput = document.getElementById("fullName");
+    const usernameInput = document.getElementById("username");
     const passwordInput = document.getElementById("password");
     const accountMenu = document.getElementById("accountMenu");
     const loginButton = document.getElementById("loginButton");
@@ -528,10 +528,10 @@
       const isArtist = mode === "artist";
       modalTitle.textContent = isLogin ? "Welcome back" : isArtist ? "Join as an artist" : "Find your people";
       modalDescription.textContent = isLogin ? "Log in to save your favorites and follow the artists you love." : isArtist ? "Artist sign-up is coming soon. Leave your email and we'll keep you in the loop." : "Create your account to save favorites and follow new voices.";
-      nameField.hidden = isLogin;
+      usernameField.hidden = isLogin || isArtist;
       passwordField.hidden = isArtist;
       passwordInput.required = !isArtist;
-      fullNameInput.required = !isLogin && !isArtist;
+      usernameInput.required = !isLogin && !isArtist;
       passwordInput.autocomplete = isLogin ? "current-password" : "new-password";
       submitAccount.textContent = isLogin ? "Log in" : isArtist ? "Notify me" : "Create account";
       submitAccount.disabled = false;
@@ -541,7 +541,7 @@
         ? 'New to J-MUSIC? <button type="button" class="modal-switch" data-switch="signup">Create an account</button>'
         : 'Already have an account? <button type="button" class="modal-switch" data-switch="login">Log in</button>';
       backdrop.classList.add("open");
-      (isLogin ? document.getElementById("email") : isArtist ? document.getElementById("email") : fullNameInput).focus();
+      (isLogin || isArtist ? document.getElementById("email") : usernameInput).focus();
     }
     document.querySelectorAll("[data-modal]").forEach(button => button.addEventListener("click", () => openModal(button.dataset.modal)));
     document.querySelector(".close-modal").addEventListener("click", () => backdrop.classList.remove("open"));
@@ -631,7 +631,7 @@
           showToast("You're logged in. Welcome to J-MUSIC!");
         } else {
           const credential = await firebaseAuth.createUserWithEmailAndPassword(email, passwordInput.value);
-          await credential.user.updateProfile({ displayName: fullNameInput.value.trim() });
+          await credential.user.updateProfile({ displayName: usernameInput.value.trim() });
           await credential.user.sendEmailVerification({
             url: `${window.location.origin}${window.location.pathname}`
           });
