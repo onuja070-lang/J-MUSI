@@ -48,6 +48,8 @@
     .search input::placeholder { color: #77766f; }
     .text-button, .icon-button { border: 0; background: none; cursor: pointer; }
     .text-button { color: #c9c6bd; font-size: 12px; }
+    .account-menu { display: flex; align-items: center; gap: 12px; }
+    .account-menu[hidden] { display: none; }
     .signup { border: 0; border-radius: 8px; padding: 11px 16px; background: var(--accent); color: #20190f; font-size: 12px; font-weight: 700; cursor: pointer; }
     .signup:hover, .primary:hover { background: #f0c77e; }
     .mobile-menu { display: none; }
@@ -127,13 +129,17 @@
     .empty { grid-column: 1/-1; padding: 35px; border: 1px dashed var(--line); border-radius: 12px; color: var(--muted); text-align: center; font-size: 13px; }
     .modal-backdrop { position: fixed; z-index: 10; inset: 0; display: none; place-items: center; padding: 20px; background: rgba(0,0,0,.72); backdrop-filter: blur(5px); }
     .modal-backdrop.open { display: grid; }
-    .modal { width: min(100%,390px); position: relative; padding: 30px; border: 1px solid var(--line); border-radius: 16px; background: #191918; box-shadow: 0 25px 90px #0008; }
+    .modal { width: min(100%,390px); max-height: calc(100vh - 40px); overflow-y: auto; position: relative; padding: 30px; border: 1px solid var(--line); border-radius: 16px; background: #191918; box-shadow: 0 25px 90px #0008; }
     .modal h2 { margin: 0 0 8px; font: 600 23px "Space Grotesk",sans-serif; }
     .modal p { margin-bottom: 22px; color: var(--muted); font-size: 12px; line-height: 1.6; }
     .modal label { display: block; margin: 13px 0 6px; color: #c5c2b9; font-size: 11px; }
     .modal input { width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 7px; outline: 0; color: var(--text); background: #111110; font-size: 12px; }
     .modal input:focus { border-color: var(--accent); }
     .modal .primary { width: 100%; justify-content: center; margin-top: 19px; }
+    .modal .primary:disabled { opacity: .7; cursor: wait; }
+    .account-error { margin: 12px 0 0; color: #f28a83; font-size: 11px; line-height: 1.55; }
+    .account-switch { margin: 17px 0 0; color: var(--muted); text-align: center; font-size: 11px; }
+    .modal-switch { padding: 0; border: 0; background: transparent; color: var(--accent); cursor: pointer; font-size: inherit; }
     .close-modal { position: absolute; top: 14px; right: 14px; border: 0; background: transparent; color: var(--muted); font-size: 20px; cursor: pointer; }
     .toast { position: fixed; z-index: 20; right: 22px; bottom: 100px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 9px; color: var(--text); background: #242421; box-shadow: 0 10px 30px #0006; font-size: 12px; opacity: 0; transform: translateY(8px); pointer-events: none; transition: .2s; }
     .toast.show { opacity: 1; transform: translateY(0); }
@@ -209,8 +215,12 @@
       </nav>
       <div class="top-actions">
         <label class="search" aria-label="Search songs and artists"><span aria-hidden="true">⌕</span><input id="searchInput" type="search" placeholder="Search music..." autocomplete="off"></label>
-        <button class="text-button" data-modal="login">Log in</button>
-        <button class="signup" data-modal="signup">Sign up</button>
+        <button class="text-button" id="loginButton" data-modal="login">Log in</button>
+        <button class="signup" id="signupButton" data-modal="signup">Sign up</button>
+        <div class="account-menu" id="accountMenu" hidden>
+          <span class="text-button" id="accountName"></span>
+          <button class="text-button" id="logoutButton">Log out</button>
+        </div>
         <button class="mobile-menu" id="menuToggle" aria-label="Open menu" aria-expanded="false">☰</button>
       </div>
     </header>
@@ -303,13 +313,18 @@
       <h2 id="modalTitle" style="margin-top:22px">Welcome back</h2>
       <p id="modalDescription">Log in to save your favorites and follow the artists you love.</p>
       <div id="nameField" hidden><label for="fullName">Your name</label><input id="fullName" name="name" autocomplete="name" placeholder="Jordan Lee"></div>
+      <div id="usernameField" hidden><label for="username">Username</label><input id="username" name="username" autocomplete="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" placeholder="jordanmusic"></div>
       <label for="email">Email address</label><input id="email" name="email" type="email" required autocomplete="email" placeholder="you@example.com">
       <div id="passwordField"><label for="password">Password</label><input id="password" name="password" type="password" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters"></div>
+      <p class="account-error" id="accountError" role="alert" hidden></p>
       <button class="primary" id="submitAccount" type="submit">Log in</button>
+      <p class="account-switch" id="accountSwitch"></p>
     </form>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./supabase-config.js"></script>
   <script>
     const tracks = [
       { title: "Golden Hour", artist: "Nia Sol", genre: "Afrobeats", tag: "NEW", duration: "3:24", image: "photo-1516280440614-37939bbacd81" },
@@ -459,8 +474,52 @@
     const modalTitle = document.getElementById("modalTitle");
     const modalDescription = document.getElementById("modalDescription");
     const nameField = document.getElementById("nameField");
+    const usernameField = document.getElementById("usernameField");
     const passwordField = document.getElementById("passwordField");
     const submitAccount = document.getElementById("submitAccount");
+    const accountError = document.getElementById("accountError");
+    const accountSwitch = document.getElementById("accountSwitch");
+    const accountForm = document.getElementById("accountForm");
+    const fullNameInput = document.getElementById("fullName");
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
+    const accountMenu = document.getElementById("accountMenu");
+    const loginButton = document.getElementById("loginButton");
+    const signupButton = document.getElementById("signupButton");
+    let supabaseClient = null;
+    const supabaseConfig = window.JMUSIC_SUPABASE_CONFIG;
+    if (window.supabase && supabaseConfig?.url && supabaseConfig?.anonKey &&
+        !supabaseConfig.url.includes("YOUR_SUPABASE_") && !supabaseConfig.anonKey.includes("YOUR_SUPABASE_")) {
+      try {
+        supabaseClient = window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey);
+      } catch (error) {
+        console.error("Supabase configuration is invalid:", error);
+      }
+    }
+
+    function updateAccountUI(user) {
+      accountMenu.hidden = !user;
+      loginButton.hidden = Boolean(user);
+      signupButton.hidden = Boolean(user);
+      document.getElementById("accountName").textContent =
+        user ? (user.user_metadata?.username || user.user_metadata?.full_name || user.email) : "";
+    }
+    function showAccountError(message) {
+      accountError.textContent = message;
+      accountError.hidden = !message;
+    }
+    if (supabaseClient) {
+      supabaseClient.auth.getSession().then(({ data, error }) => {
+        if (error) {
+          showToast("Couldn't restore your account session. Please log in again.");
+          console.error("Supabase session restore failed:", error.message);
+          return;
+        }
+        updateAccountUI(data.session?.user || null);
+      });
+      supabaseClient.auth.onAuthStateChange((_event, session) => updateAccountUI(session?.user || null));
+    }
+
     let modalMode = "login";
     function openModal(mode) {
       modalMode = mode;
@@ -469,12 +528,20 @@
       modalTitle.textContent = isLogin ? "Welcome back" : isArtist ? "Join as an artist" : "Find your people";
       modalDescription.textContent = isLogin ? "Log in to save your favorites and follow the artists you love." : isArtist ? "Artist sign-up is coming soon. Leave your email and we'll keep you in the loop." : "Create your account to save favorites and follow new voices.";
       nameField.hidden = isLogin;
+      usernameField.hidden = isLogin || isArtist;
       passwordField.hidden = isArtist;
-      document.getElementById("password").required = !isArtist;
-      document.getElementById("fullName").required = !isLogin;
+      passwordInput.required = !isArtist;
+      fullNameInput.required = !isLogin && !isArtist;
+      usernameInput.required = !isLogin && !isArtist;
+      passwordInput.autocomplete = isLogin ? "current-password" : "new-password";
       submitAccount.textContent = isLogin ? "Log in" : isArtist ? "Notify me" : "Create account";
+      submitAccount.disabled = false;
+      showAccountError("");
+      accountSwitch.innerHTML = isArtist ? "" : isLogin
+        ? 'New to J-MUSIC? <button type="button" class="modal-switch" data-switch="signup">Create an account</button>'
+        : 'Already have an account? <button type="button" class="modal-switch" data-switch="login">Log in</button>';
       backdrop.classList.add("open");
-      (isLogin ? document.getElementById("email") : isArtist ? document.getElementById("email") : document.getElementById("fullName")).focus();
+      (isLogin ? document.getElementById("email") : isArtist ? document.getElementById("email") : fullNameInput).focus();
     }
     document.querySelectorAll("[data-modal]").forEach(button => button.addEventListener("click", () => openModal(button.dataset.modal)));
     document.querySelector(".close-modal").addEventListener("click", () => backdrop.classList.remove("open"));
@@ -486,12 +553,82 @@
         playButton.click();
       }
     });
-    document.getElementById("accountForm").addEventListener("submit", event => {
+    accountSwitch.addEventListener("click", event => {
+      const button = event.target.closest("[data-switch]");
+      if (button) openModal(button.dataset.switch);
+    });
+    document.getElementById("logoutButton").addEventListener("click", async () => {
+      if (!supabaseClient) {
+        showToast("Account sign-up is not configured yet.");
+        return;
+      }
+      const { error } = await supabaseClient.auth.signOut();
+      if (error) {
+        showToast("Couldn't log out. Please try again.");
+        console.error("Supabase sign-out failed:", error.message);
+        return;
+      }
+      updateAccountUI(null);
+      showToast("You have logged out.");
+    });
+    accountForm.addEventListener("submit", async event => {
       event.preventDefault();
-      if (!event.currentTarget.reportValidity()) return;
-      backdrop.classList.remove("open");
-      showToast(modalMode === "artist" ? "Thanks! We'll let you know when artist sign-up opens." : modalMode === "login" ? "Account access needs a connected J-MUSIC service." : "Account creation needs a connected J-MUSIC service.");
-      event.currentTarget.reset();
+      if (!accountForm.reportValidity()) return;
+      if (modalMode === "artist") {
+        backdrop.classList.remove("open");
+        showToast("Thanks! We'll let you know when artist sign-up opens.");
+        accountForm.reset();
+        return;
+      }
+      if (!supabaseClient) {
+        showAccountError("Sign-up is not connected yet. The site owner must add the Supabase project URL and public anon key to supabase-config.js.");
+        return;
+      }
+
+      submitAccount.disabled = true;
+      submitAccount.textContent = modalMode === "login" ? "Logging in…" : "Creating account…";
+      showAccountError("");
+      try {
+        const result = modalMode === "login"
+          ? await supabaseClient.auth.signInWithPassword({
+              email: document.getElementById("email").value.trim(),
+              password: passwordInput.value
+            })
+          : await supabaseClient.auth.signUp({
+              email: document.getElementById("email").value.trim(),
+              password: passwordInput.value,
+              options: {
+                emailRedirectTo: `${window.location.origin}${window.location.pathname}`,
+                data: {
+                  full_name: fullNameInput.value.trim(),
+                  username: usernameInput.value.trim()
+                }
+              }
+            });
+        if (result.error) {
+          showAccountError(result.error.message);
+          return;
+        }
+        if (modalMode === "login") {
+          updateAccountUI(result.data.user);
+          backdrop.classList.remove("open");
+          showToast("You're logged in. Welcome to J-MUSIC!");
+        } else if (result.data.session) {
+          updateAccountUI(result.data.user);
+          backdrop.classList.remove("open");
+          showToast("Your J-MUSIC account is ready. Welcome!");
+        } else {
+          showAccountError("Account created. Check your email for a confirmation link before logging in.");
+          passwordInput.value = "";
+        }
+        if (modalMode === "login" || result.data.session) accountForm.reset();
+      } catch (error) {
+        console.error("Supabase authentication request failed:", error);
+        showAccountError("We couldn't reach the account service. Check your connection and try again.");
+      } finally {
+        submitAccount.disabled = false;
+        submitAccount.textContent = modalMode === "login" ? "Log in" : "Create account";
+      }
     });
     const menuToggle = document.getElementById("menuToggle");
     const mobileNav = document.getElementById("mobileNav");
