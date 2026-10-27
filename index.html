@@ -313,18 +313,19 @@
       <h2 id="modalTitle" style="margin-top:22px">Welcome back</h2>
       <p id="modalDescription">Log in to save your favorites and follow the artists you love.</p>
       <div id="nameField" hidden><label for="fullName">Your name</label><input id="fullName" name="name" autocomplete="name" placeholder="Jordan Lee"></div>
-      <div id="usernameField" hidden><label for="username">Username</label><input id="username" name="username" autocomplete="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" placeholder="jordanmusic"></div>
       <label for="email">Email address</label><input id="email" name="email" type="email" required autocomplete="email" placeholder="you@example.com">
       <div id="passwordField"><label for="password">Password</label><input id="password" name="password" type="password" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters"></div>
       <p class="account-error" id="accountError" role="alert" hidden></p>
+      <button class="modal-switch resend-verification" id="resendVerification" type="button" hidden>Resend confirmation email</button>
       <button class="primary" id="submitAccount" type="submit">Log in</button>
       <p class="account-switch" id="accountSwitch"></p>
     </form>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./supabase-config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="./firebase-config.js"></script>
   <script>
     const tracks = [
       { title: "Golden Hour", artist: "Nia Sol", genre: "Afrobeats", tag: "NEW", duration: "3:24", image: "photo-1516280440614-37939bbacd81" },
@@ -474,26 +475,29 @@
     const modalTitle = document.getElementById("modalTitle");
     const modalDescription = document.getElementById("modalDescription");
     const nameField = document.getElementById("nameField");
-    const usernameField = document.getElementById("usernameField");
     const passwordField = document.getElementById("passwordField");
     const submitAccount = document.getElementById("submitAccount");
     const accountError = document.getElementById("accountError");
     const accountSwitch = document.getElementById("accountSwitch");
     const accountForm = document.getElementById("accountForm");
     const fullNameInput = document.getElementById("fullName");
-    const usernameInput = document.getElementById("username");
     const passwordInput = document.getElementById("password");
     const accountMenu = document.getElementById("accountMenu");
     const loginButton = document.getElementById("loginButton");
     const signupButton = document.getElementById("signupButton");
-    let supabaseClient = null;
-    const supabaseConfig = window.JMUSIC_SUPABASE_CONFIG;
-    if (window.supabase && supabaseConfig?.url && supabaseConfig?.anonKey &&
-        !supabaseConfig.url.includes("YOUR_SUPABASE_") && !supabaseConfig.anonKey.includes("YOUR_SUPABASE_")) {
+    let firebaseAuth = null;
+    const firebaseConfig = window.JMUSIC_FIREBASE_CONFIG;
+    const firebaseConfigured = firebaseConfig &&
+      ["apiKey", "authDomain", "projectId", "appId"].every(key =>
+        typeof firebaseConfig[key] === "string" &&
+        firebaseConfig[key].length > 0 &&
+        !firebaseConfig[key].includes("YOUR_FIREBASE_"));
+    if (window.firebase && firebaseConfigured) {
       try {
-        supabaseClient = window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey);
+        firebase.initializeApp(firebaseConfig);
+        firebaseAuth = firebase.auth();
       } catch (error) {
-        console.error("Supabase configuration is invalid:", error);
+        console.error("Firebase configuration could not be initialized:", error);
       }
     }
 
@@ -502,22 +506,19 @@
       loginButton.hidden = Boolean(user);
       signupButton.hidden = Boolean(user);
       document.getElementById("accountName").textContent =
-        user ? (user.user_metadata?.username || user.user_metadata?.full_name || user.email) : "";
+        user ? (user.displayName || user.email) : "";
     }
     function showAccountError(message) {
       accountError.textContent = message;
       accountError.hidden = !message;
     }
-    if (supabaseClient) {
-      supabaseClient.auth.getSession().then(({ data, error }) => {
-        if (error) {
-          showToast("Couldn't restore your account session. Please log in again.");
-          console.error("Supabase session restore failed:", error.message);
-          return;
-        }
-        updateAccountUI(data.session?.user || null);
+    if (firebaseAuth) {
+      firebaseAuth.onAuthStateChanged(user => {
+        updateAccountUI(user?.emailVerified ? user : null);
+      }, error => {
+        console.error("Firebase authentication state failed:", error);
+        showToast("Couldn't restore your account session. Please log in again.");
       });
-      supabaseClient.auth.onAuthStateChange((_event, session) => updateAccountUI(session?.user || null));
     }
 
     let modalMode = "login";
@@ -528,14 +529,13 @@
       modalTitle.textContent = isLogin ? "Welcome back" : isArtist ? "Join as an artist" : "Find your people";
       modalDescription.textContent = isLogin ? "Log in to save your favorites and follow the artists you love." : isArtist ? "Artist sign-up is coming soon. Leave your email and we'll keep you in the loop." : "Create your account to save favorites and follow new voices.";
       nameField.hidden = isLogin;
-      usernameField.hidden = isLogin || isArtist;
       passwordField.hidden = isArtist;
       passwordInput.required = !isArtist;
       fullNameInput.required = !isLogin && !isArtist;
-      usernameInput.required = !isLogin && !isArtist;
       passwordInput.autocomplete = isLogin ? "current-password" : "new-password";
       submitAccount.textContent = isLogin ? "Log in" : isArtist ? "Notify me" : "Create account";
       submitAccount.disabled = false;
+      document.getElementById("resendVerification").hidden = true;
       showAccountError("");
       accountSwitch.innerHTML = isArtist ? "" : isLogin
         ? 'New to J-MUSIC? <button type="button" class="modal-switch" data-switch="signup">Create an account</button>'
@@ -558,19 +558,47 @@
       if (button) openModal(button.dataset.switch);
     });
     document.getElementById("logoutButton").addEventListener("click", async () => {
-      if (!supabaseClient) {
+      if (!firebaseAuth) {
         showToast("Account sign-up is not configured yet.");
         return;
       }
-      const { error } = await supabaseClient.auth.signOut();
-      if (error) {
+      try {
+        await firebaseAuth.signOut();
+      } catch (error) {
         showToast("Couldn't log out. Please try again.");
-        console.error("Supabase sign-out failed:", error.message);
+        console.error("Firebase sign-out failed:", error);
         return;
       }
       updateAccountUI(null);
       showToast("You have logged out.");
     });
+    document.getElementById("resendVerification").addEventListener("click", async () => {
+      try {
+        const credential = await firebaseAuth.signInWithEmailAndPassword(
+          document.getElementById("email").value.trim(),
+          passwordInput.value
+        );
+        await credential.user.sendEmailVerification({
+          url: `${window.location.origin}${window.location.pathname}`
+        });
+        await firebaseAuth.signOut();
+        showAccountError("A new confirmation email has been sent. Check your inbox.");
+      } catch (error) {
+        showAccountError(firebaseErrorMessage(error));
+      }
+    });
+    function firebaseErrorMessage(error) {
+      const messages = {
+        "auth/email-already-in-use": "An account already exists for this email. Try logging in instead.",
+        "auth/invalid-email": "Enter a valid email address.",
+        "auth/invalid-credential": "Email or password is incorrect.",
+        "auth/user-disabled": "This account has been disabled.",
+        "auth/weak-password": "Choose a stronger password with at least 6 characters.",
+        "auth/too-many-requests": "Too many attempts. Wait a little and try again.",
+        "auth/network-request-failed": "Couldn't connect. Check your internet connection and try again."
+      };
+      return messages[error.code] || "We couldn't complete that request. Please check your details and try again.";
+    }
     accountForm.addEventListener("submit", async event => {
       event.preventDefault();
       if (!accountForm.reportValidity()) return;
@@ -580,8 +608,8 @@
         accountForm.reset();
         return;
       }
-      if (!supabaseClient) {
-        showAccountError("Sign-up is not connected yet. The site owner must add the Supabase project URL and public anon key to supabase-config.js.");
+      if (!firebaseAuth) {
+        showAccountError("Account sign-up is not connected yet. The site owner must configure Firebase in firebase-config.js.");
         return;
       }
 
@@ -589,42 +617,32 @@
       submitAccount.textContent = modalMode === "login" ? "Logging in…" : "Creating account…";
       showAccountError("");
       try {
-        const result = modalMode === "login"
-          ? await supabaseClient.auth.signInWithPassword({
-              email: document.getElementById("email").value.trim(),
-              password: passwordInput.value
-            })
-          : await supabaseClient.auth.signUp({
-              email: document.getElementById("email").value.trim(),
-              password: passwordInput.value,
-              options: {
-                emailRedirectTo: `${window.location.origin}${window.location.pathname}`,
-                data: {
-                  full_name: fullNameInput.value.trim(),
-                  username: usernameInput.value.trim()
-                }
-              }
-            });
-        if (result.error) {
-          showAccountError(result.error.message);
-          return;
-        }
+        const email = document.getElementById("email").value.trim();
         if (modalMode === "login") {
-          updateAccountUI(result.data.user);
+          const credential = await firebaseAuth.signInWithEmailAndPassword(email, passwordInput.value);
+          if (!credential.user.emailVerified) {
+            await firebaseAuth.signOut();
+            showAccountError("Please confirm your email before logging in. You can resend the confirmation link below.");
+            document.getElementById("resendVerification").hidden = false;
+            return;
+          }
+          updateAccountUI(credential.user);
           backdrop.classList.remove("open");
           showToast("You're logged in. Welcome to J-MUSIC!");
-        } else if (result.data.session) {
-          updateAccountUI(result.data.user);
-          backdrop.classList.remove("open");
-          showToast("Your J-MUSIC account is ready. Welcome!");
         } else {
-          showAccountError("Account created. Check your email for a confirmation link before logging in.");
+          const credential = await firebaseAuth.createUserWithEmailAndPassword(email, passwordInput.value);
+          await credential.user.updateProfile({ displayName: fullNameInput.value.trim() });
+          await credential.user.sendEmailVerification({
+            url: `${window.location.origin}${window.location.pathname}`
+          });
+          await firebaseAuth.signOut();
+          showAccountError("Your account is created. Check your email and confirm your address before logging in.");
           passwordInput.value = "";
         }
-        if (modalMode === "login" || result.data.session) accountForm.reset();
+        if (modalMode === "login") accountForm.reset();
       } catch (error) {
-        console.error("Supabase authentication request failed:", error);
-        showAccountError("We couldn't reach the account service. Check your connection and try again.");
+        console.error("Firebase authentication request failed:", error);
+        showAccountError(firebaseErrorMessage(error));
       } finally {
         submitAccount.disabled = false;
         submitAccount.textContent = modalMode === "login" ? "Log in" : "Create account";

@@ -6,16 +6,17 @@ The public Admin preview is available at `admin.html`. It contains sample dashbo
 
 ## Run locally
 
-Open `index.html` in a browser. The music player uses demo audio. User sign-up and login use Supabase Auth after the project is configured; artist forms are still a UI demonstration.
+Open `index.html` in a browser. The music player uses demo audio. User sign-up and login use Firebase Authentication after the project is configured; artist forms are still a UI demonstration.
 
-## Configure user sign-up
+## Configure user sign-up with Firebase
 
-1. Create a Supabase project and open **Project Settings → API**.
-2. Copy the project URL and the public anon/publishable key into `supabase-config.js`.
-3. In Supabase **Authentication → URL Configuration**, set the site URL to `https://onuja070-lang.github.io/J-MUSI/` and add `https://onuja070-lang.github.io/J-MUSI/` to the redirect URLs.
-4. Configure Supabase email delivery and confirmation settings. By default, new users may need to confirm their email before logging in.
+1. Create a Firebase project in the [Firebase Console](https://console.firebase.google.com/).
+2. Add a **Web app** to the project, then copy its web configuration values into `firebase-config.js`.
+3. In **Authentication → Sign-in method**, enable **Email/Password**.
+4. In **Authentication → Settings → Authorized domains**, add `onuja070-lang.github.io`.
+5. In **Authentication → Templates**, configure the email verification message and sender settings.
 
-The anon/publishable key is intended for browser use. **Never put a Supabase service-role/secret key in this website or its public repository.** Add only `supabase-config.js` values that are safe to publish.
+Users create their own accounts through the website and must confirm their email before logging in. Firebase web-app configuration is intended for public client use; protect backend data separately with Firebase Security Rules. **Never put service-account credentials or private keys in this website or its public repository.**
 
 ## Publish with GitHub Pages
 
