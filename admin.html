@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10100f">
+  <meta name="description" content="J-MUSIC admin dashboard preview.">
+  <title>Admin dashboard — J-MUSIC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #10100f;
+      --panel: #191918;
+      --panel-2: #20201e;
+      --line: rgba(255,255,255,.09);
+      --text: #f5f2eb;
+      --muted: #9a9992;
+      --accent: #e6b866;
+      --green: #b2d49b;
+      --red: #f28a83;
+      font-family: "DM Sans", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; }
+    button, input { font: inherit; }
+    button, a { color: inherit; }
+    a { text-decoration: none; }
+    .layout { min-height: 100vh; }
+    .sidebar { position: fixed; inset: 0 auto 0 0; z-index: 3; width: 235px; display: flex; flex-direction: column; padding: 25px 16px; border-right: 1px solid var(--line); background: #141413; }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 0 10px; font: 700 21px "Space Grotesk",sans-serif; letter-spacing: -.7px; }
+    .brand-mark { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; color: #14120e; background: var(--accent); font-size: 15px; }
+    .brand-name span:last-child { color: var(--accent); }
+    .side-label { margin: 38px 10px 11px; color: #6f6e68; font-size: 9px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; }
+    .side-nav { display: grid; gap: 5px; }
+    .side-link { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border: 1px solid transparent; border-radius: 8px; color: #aaa9a1; font-size: 12px; }
+    .side-link:hover, .side-link.active { border-color: rgba(230,184,102,.14); color: var(--accent); background: rgba(230,184,102,.08); }
+    .side-link .symbol { width: 18px; text-align: center; font-size: 15px; }
+    .sidebar-bottom { margin-top: auto; }
+    .profile { display: flex; align-items: center; gap: 10px; padding: 15px 8px 0; border-top: 1px solid var(--line); }
+    .avatar { width: 33px; height: 33px; display: grid; place-items: center; border-radius: 50%; color: #211a10; background: var(--accent); font-size: 11px; font-weight: 700; }
+    .profile strong, .profile small { display: block; }
+    .profile strong { font-size: 11px; }
+    .profile small { margin-top: 3px; color: var(--muted); font-size: 9px; }
+    .content { max-width: 1440px; margin-left: 235px; padding: 0 38px 50px; }
+    .topbar { height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--line); }
+    .crumb { color: var(--muted); font-size: 11px; }
+    .crumb strong { color: var(--text); font-weight: 500; }
+    .top-actions { display: flex; align-items: center; gap: 12px; }
+    .home-link, .icon-button { min-height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 11px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: #c4c1b8; font-size: 11px; cursor: pointer; }
+    .home-link:hover, .icon-button:hover { border-color: rgba(230,184,102,.55); color: var(--accent); }
+    main { padding-top: 29px; }
+    .heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-bottom: 22px; }
+    h1 { margin: 0; font: 600 29px "Space Grotesk",sans-serif; letter-spacing: -1px; }
+    .heading p { margin: 6px 0 0; color: var(--muted); font-size: 11px; }
+    .date { color: #aaa79e; font-size: 10px; }
+    .notice { display: flex; align-items: flex-start; gap: 11px; margin-bottom: 20px; padding: 12px 14px; border: 1px solid rgba(230,184,102,.26); border-radius: 9px; background: rgba(230,184,102,.065); color: #d7c6a4; font-size: 11px; line-height: 1.55; }
+    .notice strong { color: var(--accent); }
+    .stats { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 13px; }
+    .stat-card, .panel { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+    .stat-card { min-height: 119px; padding: 16px; }
+    .stat-top { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 10px; }
+    .stat-icon { width: 29px; height: 29px; display: grid; place-items: center; border-radius: 8px; color: var(--accent); background: rgba(230,184,102,.09); font-size: 14px; }
+    .stat-number { margin-top: 14px; font: 600 25px "Space Grotesk",sans-serif; letter-spacing: -.8px; }
+    .stat-foot { margin-top: 3px; color: var(--green); font-size: 9px; }
+    .dashboard-grid { display: grid; grid-template-columns: minmax(0,1.55fr) minmax(250px,.85fr); gap: 15px; margin-top: 16px; }
+    .panel { min-width: 0; padding: 18px; }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 17px; }
+    .panel-head h2 { margin: 0; font: 600 15px "Space Grotesk",sans-serif; }
+    .panel-head p { margin: 5px 0 0; color: var(--muted); font-size: 10px; }
+    .small-link { border: 0; background: none; color: var(--accent); font-size: 10px; cursor: pointer; }
+    .table-wrap { width: 100%; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { padding: 0 9px 10px; color: #77766f; font-size: 9px; font-weight: 500; white-space: nowrap; }
+    td { padding: 11px 9px; border-top: 1px solid var(--line); color: #bdbab1; font-size: 10px; white-space: nowrap; }
+    .song-cell { display: flex; align-items: center; gap: 9px; color: var(--text); font-weight: 600; }
+    .cover { width: 31px; height: 31px; border-radius: 6px; object-fit: cover; background: var(--panel-2); }
+    .song-cell small { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; font-weight: 400; }
+    .status { display: inline-flex; align-items: center; gap: 5px; padding: 5px 7px; border-radius: 12px; color: #e9c779; background: rgba(230,184,102,.09); font-size: 9px; }
+    .status:before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+    .status.approved { color: var(--green); background: rgba(178,212,155,.09); }
+    .status.rejected { color: var(--red); background: rgba(242,138,131,.09); }
+    .row-actions { display: flex; gap: 6px; }
+    .row-action { padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: #c9c6bd; font-size: 9px; cursor: pointer; }
+    .row-action:hover { border-color: rgba(230,184,102,.45); color: var(--accent); }
+    .row-action.approve:hover { border-color: rgba(178,212,155,.5); color: var(--green); }
+    .activity-list { display: grid; }
+    .activity { display: grid; grid-template-columns: 29px 1fr; gap: 10px; padding: 12px 0; border-top: 1px solid var(--line); }
+    .activity:first-child { padding-top: 0; border-top: 0; }
+    .activity-icon { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; color: var(--accent); background: rgba(230,184,102,.09); font-size: 12px; }
+    .activity p { margin: 0; color: #cbc8bf; font-size: 10px; line-height: 1.5; }
+    .activity time { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; }
+    .quick-actions { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin-top: 15px; }
+    .quick-action { display: flex; align-items: center; gap: 11px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: #d2cfc6; font-size: 10px; cursor: pointer; text-align: left; }
+    .quick-action:hover { border-color: rgba(230,184,102,.45); }
+    .quick-action span:first-child { color: var(--accent); font-size: 16px; }
+    .empty { padding: 25px; color: var(--muted); text-align: center; font-size: 11px; }
+    .toast { position: fixed; z-index: 5; right: 20px; bottom: 20px; padding: 11px 15px; border: 1px solid var(--line); border-radius: 9px; background: #242421; color: var(--text); font-size: 11px; opacity: 0; transform: translateY(8px); transition: .2s; pointer-events: none; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    @media (max-width: 1050px) {
+      .sidebar { width: 200px; }
+      .content { margin-left: 200px; padding-right: 22px; padding-left: 22px; }
+      .stats { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .dashboard-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 680px) {
+      .sidebar { position: static; width: 100%; height: auto; padding: 13px 15px 10px; border-right: 0; border-bottom: 1px solid var(--line); }
+      .sidebar .brand { padding: 0; }
+      .side-label, .sidebar-bottom { display: none; }
+      .side-nav { display: flex; gap: 5px; margin-top: 12px; overflow-x: auto; scrollbar-width: none; }
+      .side-link { flex: 0 0 auto; padding: 8px 10px; font-size: 10px; }
+      .side-link .symbol { width: auto; }
+      .content { margin-left: 0; padding: 0 15px 35px; }
+      .topbar { height: 55px; }
+      main { padding-top: 22px; }
+      h1 { font-size: 25px; }
+      .heading { align-items: flex-start; }
+      .date { padding-top: 5px; text-align: right; }
+      .stats { gap: 9px; }
+      .stat-card { min-height: 108px; padding: 12px; }
+      .stat-number { font-size: 22px; }
+      .panel { padding: 14px 10px; }
+      th, td { padding-right: 6px; padding-left: 6px; }
+      .quick-actions { grid-template-columns: 1fr; gap: 8px; }
+      .home-link { min-height: 33px; padding: 0 8px; font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="brand" href="./index.html" aria-label="J-MUSIC home">
+        <span class="brand-mark">♫</span>
+        <span class="brand-name">J-<span>MUSIC</span></span>
+      </a>
+      <div class="side-label">Workspace</div>
+      <nav class="side-nav" aria-label="Admin navigation">
+        <a class="side-link active" href="#overview"><span class="symbol">▦</span>Overview</a>
+        <a class="side-link" href="#submissions"><span class="symbol">♫</span>Music review</a>
+        <a class="side-link" href="#activity"><span class="symbol">◷</span>Activity</a>
+        <a class="side-link" href="#quick-actions"><span class="symbol">⚙</span>Quick actions</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="profile"><span class="avatar">JM</span><span><strong>J-MUSIC Admin</strong><small>Dashboard preview</small></span></div>
+      </div>
+    </aside>
+
+    <div class="content">
+      <header class="topbar">
+        <div class="crumb">Workspace <span aria-hidden="true">/</span> <strong>Overview</strong></div>
+        <div class="top-actions">
+          <button class="icon-button" id="notificationButton" aria-label="Notifications">♧ <span>Notifications</span></button>
+          <a class="home-link" href="./index.html">←&nbsp; Back to J-MUSIC</a>
+        </div>
+      </header>
+
+      <main id="overview">
+        <div class="heading">
+          <div><h1>Good to see you.</h1><p>Here's what's happening with your music community.</p></div>
+          <time class="date" id="today"></time>
+        </div>
+        <div class="notice" role="note">
+          <span aria-hidden="true">ⓘ</span>
+          <span><strong>Admin preview only.</strong> This page is publicly accessible and uses sample data. Review buttons only change this page temporarily; there is no login, backend, or protected admin access.</span>
+        </div>
+
+        <section class="stats" aria-label="Platform statistics">
+          <article class="stat-card"><div class="stat-top"><span>Total listeners</span><span class="stat-icon">♙</span></div><div class="stat-number">12,840</div><div class="stat-foot">↑ 8.2% this month</div></article>
+          <article class="stat-card"><div class="stat-top"><span>Artists</span><span class="stat-icon">♫</span></div><div class="stat-number">486</div><div class="stat-foot">↑ 12 new this week</div></article>
+          <article class="stat-card"><div class="stat-top"><span>Published tracks</span><span class="stat-icon">▤</span></div><div class="stat-number">3,219</div><div class="stat-foot">↑ 34 this month</div></article>
+          <article class="stat-card"><div class="stat-top"><span>Awaiting review</span><span class="stat-icon">◷</span></div><div class="stat-number" id="pendingCount">3</div><div class="stat-foot" style="color:var(--accent)">Needs your attention</div></article>
+        </section>
+
+        <div class="dashboard-grid">
+          <section class="panel" id="submissions">
+            <div class="panel-head"><div><h2>Music review</h2><p>Recent submissions awaiting approval.</p></div><button class="small-link" id="showAll">View all&nbsp; →</button></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>TRACK</th><th>GENRE</th><th>SUBMITTED</th><th>STATUS</th><th>ACTION</th></tr></thead>
+                <tbody id="submissionRows">
+                  <tr data-status="pending"><td><div class="song-cell"><img class="cover" src="https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=90&q=75" alt=""><span>Golden Hour<small>Nia Sol</small></span></div></td><td>Afrobeats</td><td>Today</td><td><span class="status">Pending</span></td><td><div class="row-actions"><button class="row-action approve" data-action="approve">Approve</button><button class="row-action" data-action="reject">Reject</button></div></td></tr>
+                  <tr data-status="pending"><td><div class="song-cell"><img class="cover" src="https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=90&q=75" alt=""><span>Soft Landing<small>Juno Grey</small></span></div></td><td>R&amp;B</td><td>Yesterday</td><td><span class="status">Pending</span></td><td><div class="row-actions"><button class="row-action approve" data-action="approve">Approve</button><button class="row-action" data-action="reject">Reject</button></div></td></tr>
+                  <tr data-status="pending"><td><div class="song-cell"><img class="cover" src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=90&q=75" alt=""><span>Palmwine Dreams<small>Mira Vale</small></span></div></td><td>Afrobeats</td><td>Oct 22</td><td><span class="status">Pending</span></td><td><div class="row-actions"><button class="row-action approve" data-action="approve">Approve</button><button class="row-action" data-action="reject">Reject</button></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel" id="activity">
+            <div class="panel-head"><div><h2>Recent activity</h2><p>A quick look at the community.</p></div></div>
+            <div class="activity-list">
+              <div class="activity"><span class="activity-icon">♫</span><div><p><strong>Nia Sol</strong> submitted a new track for review.</p><time>12 minutes ago</time></div></div>
+              <div class="activity"><span class="activity-icon">♙</span><div><p><strong>Juno Grey</strong> joined J-MUSIC as an artist.</p><time>1 hour ago</time></div></div>
+              <div class="activity"><span class="activity-icon">♡</span><div><p><strong>Blue Sunday</strong> reached 1,000 plays.</p><time>3 hours ago</time></div></div>
+              <div class="activity"><span class="activity-icon">↗</span><div><p>Your weekly listener count is up <strong>8.2%</strong>.</p><time>Yesterday</time></div></div>
+            </div>
+          </section>
+        </div>
+
+        <section class="quick-actions" id="quick-actions" aria-label="Quick actions">
+          <button class="quick-action" data-action-message="Music uploads need a connected backend."><span>＋</span><span>Add music</span></button>
+          <button class="quick-action" data-action-message="Artist management needs a connected backend."><span>♙</span><span>Manage artists</span></button>
+          <button class="quick-action" data-action-message="Announcements need a connected backend."><span>✉</span><span>Send an announcement</span></button>
+        </section>
+      </main>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script>
+    const toast = document.getElementById("toast");
+    let toastTimer;
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("show"), 2600);
+    }
+    document.getElementById("today").textContent = new Intl.DateTimeFormat("en", { weekday: "long", month: "long", day: "numeric", year: "numeric" }).format(new Date());
+    document.getElementById("submissionRows").addEventListener("click", event => {
+      const button = event.target.closest("[data-action]");
+      if (!button) return;
+      const row = button.closest("tr");
+      const action = button.dataset.action;
+      row.dataset.status = action === "approve" ? "approved" : "rejected";
+      row.querySelector(".status").textContent = action === "approve" ? "Approved" : "Rejected";
+      row.querySelector(".status").className = `status ${row.dataset.status}`;
+      row.querySelector(".row-actions").innerHTML = '<span style="color:var(--muted);font-size:9px">Preview only</span>';
+      const pending = document.querySelectorAll('#submissionRows tr[data-status="pending"]').length;
+      document.getElementById("pendingCount").textContent = pending;
+      showToast(`Sample submission ${action}d for this preview.`);
+    });
+    document.getElementById("showAll").addEventListener("click", () => {
+      document.getElementById("submissions").scrollIntoView({ behavior: "smooth" });
+      showToast("Showing sample music submissions.");
+    });
+    document.getElementById("notificationButton").addEventListener("click", () => showToast("You’re all caught up."));
+    document.querySelectorAll("[data-action-message]").forEach(button => button.addEventListener("click", () => showToast(button.dataset.actionMessage)));
+  </script>
+</body>
+</html>
